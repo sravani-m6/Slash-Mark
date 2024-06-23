@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Encryption and Decryption Example</title>
+</head>
+<body>
+    <h1>Image Encryption and Decryption Example</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="encryptImage()">Encrypt Image</button>
+    <br><br>
+    <img id="encryptedImage" style="display: none;">
+    <p id="encryptionInfo" style="display: none;"></p>
+    <br><br>
+    <label for="decryptionKey">Decryption Key:</label>
+    <input type="text" id="decryptionKey" readonly>
+    <button onclick="decryptImage()">Decrypt Image</button>
+    
+    <script>
+        let encryptionKey;
+        let iv;
+        let encryptedData;
 
+        async function encryptImage() {
+            const imageInput = document.getElementById('imageInput');
+            const file = imageInput.files[0];
+
+            if (!file) {
+                alert('Please select an image file.');
+                return;
+            }
+
+            // Read the file as ArrayBuffer
+            const fileBuffer = await file.arrayBuffer();
+            
+            // Generate a random key and IV (for demonstration purposes; use a secure method to generate keys in practice)
+            encryptionKey = await window.crypto.subtle.generateKey(
+                {
+                    name: 'AES-GCM',
+                    length: 256
+                },
+                true,
+                ['encrypt', 'decrypt']
+            );
+
+            iv = window.crypto.getRandomValues(new Uint8Array(12)); // Initialization vector
+
+            // Encrypt the image data using AES-GCM
+            encryptedData = await window.crypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                encryptionKey,
+                fileBuffer
+            );
+
+            // Display encrypted image (for demonstration purposes; in practice, handle encrypted data securely)
+            const encryptedBlob = new Blob([encryptedData], { type: file.type });
+            const encryptedImageUrl = URL.createObjectURL(encryptedBlob);
+            const encryptedImage = document.getElementById('encryptedImage');
+            encryptedImage.style.display = 'block';  // Ensure the image is visible
+            encryptedImage.src = encryptedImageUrl;
+
+            // Display encryption info (for demonstration purposes)
+            const encryptionInfo = document.getElementById('encryptionInfo');
+            encryptionInfo.style.display = 'block';
+            encryptionInfo.innerText = Image encrypted successfully. IV: ${btoa(String.fromCharCode.apply(null, iv))};
+
+            // Display decryption key (for demonstration purposes)
+            const keyData = await window.crypto.subtle.exportKey('raw', encryptionKey);
+            const decryptionKey = document.getElementById('decryptionKey');
+            decryptionKey.value = arrayBufferToBase64(keyData);
+        }
+
+        async function decryptImage() {
+            const keyData = base64ToArrayBuffer(document.getElementById('decryptionKey').value);
+
+            if (!keyData) {
+                alert('Please enter a valid decryption key.');
+                return;
+            }
+
+            try {
+                // Import the decryption key
+                const key = await window.crypto.subtle.importKey(
+                    'raw',
+                    keyData,
+                    { name: 'AES-GCM', length: 256 },
+                    true,
+                    ['encrypt', 'decrypt']
+                );
+
+                // Decrypt the image data using AES-GCM
+                const decryptedData = await window.crypto.subtle.decrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv
+                    },
+                    key,
+                    encryptedData
+                );
+
+                // Convert ArrayBuffer to Blob
+                const decryptedBlob = new Blob([decryptedData], { type: 'image/jpeg' }); // Adjust the type as per the original image type
+                const decryptedImageUrl = URL.createObjectURL(decryptedBlob);
+
+                // Display decrypted image
+                const decryptedImage = new Image();
+                decryptedImage.onload = function() {
+                    const existingImage = document.getElementById('decryptedImage');
+                    if (existingImage) {
+                        existingImage.parentNode.removeChild(existingImage); // Remove existing decrypted image if any
+                    }
+                    decryptedImage.id = 'decryptedImage';
+                    decryptedImage.style.display = 'block';
+                    document.body.appendChild(decryptedImage);
+                };
+                decryptedImage.src = decryptedImageUrl;
+
+            } catch (error) {
+                console.error('Decryption failed:', error);
+                alert('Failed to decrypt the image. Make sure the correct key is used.');
+            }
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+            return btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            try {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; ++i) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes.buffer;
+            } catch (error) {
+                console.error('Error decoding base64:', error);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
