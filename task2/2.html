@@ -1,1 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Keylogger Example</title>
+</head>
+<body>
+    <h1>Basic Keylogger Example</h1>
+    <p>Type something here:</p>
+    <textarea id="keyloggerTextArea" cols="30" rows="10"></textarea>
+    <br><br>
+    <h2>Keystrokes Logged:</h2>
+    <div id="keystrokesDisplay"></div>
+    
+    <script>
+        const keyloggerTextArea = document.getElementById('keyloggerTextArea');
+        const keystrokesDisplay = document.getElementById('keystrokesDisplay');
+        let keystrokes = '';
 
+        // Event listener for keydown event
+        keyloggerTextArea.addEventListener('keydown', function(event) {
+            const key = event.key;
+            keystrokes += key; // Log the keystroke
+
+            // Display keystrokes in real-time
+            keystrokesDisplay.innerText = keystrokes;
+
+            // You can send keystrokes to a server or process them locally
+            console.log('Keystroke logged:', key);
+        });
+
+        // Optional: Periodically send logged keystrokes to server
+        setInterval(function() {
+            if (keystrokes.length > 0) {
+                // Send keystrokes to server (example)
+                console.log('Sending keystrokes to server:', keystrokes);
+                // Reset keystrokes after sending
+                keystrokes = '';
+            }
+        }, 5000); // Adjust the interval as needed
+    </script>
+</body>
+</html>
